@@ -10,8 +10,15 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-clipboard/clipboard": "^1.15.0",
+    "expo": "^52.0.6",
+    "expo-clipboard": "^7.0.0",
     "react": "18.3.1",
-    "react-native": "0.76.1"
+    "react-native": "0.76.1",
+    "react-native-device-info": "^14.0.0",
+    "react-native-webrtc": "^124.0.4",
+    "react-native-zeroconf": "^0.13.8",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -25,6 +32,7 @@
     "@react-native/metro-config": "0.76.1",
     "@react-native/typescript-config": "0.76.1",
     "@types/react": "^18.2.6",
+    "@types/react-native-zeroconf": "^0.13.1",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.6.3",
     "eslint": "^8.19.0",
