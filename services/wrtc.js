@@ -1,13 +1,13 @@
 import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCDataChannel } from 'react-native-webrtc';
 import { connectToSignalingServer } from './signaling';
 let dataChannel = null;
+let remoteCandidates = [];
 
 // Crear PeerConnection
 const socket = connectToSignalingServer();
 
-const pc = new RTCPeerConnection({
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-});
+const pc = new RTCPeerConnection();
+
 
 pc.addEventListener( 'iceconnectionstatechange', event => {
   console.log('Estado de la conexión:', pc.connectionState);
@@ -17,6 +17,62 @@ pc.addEventListener( 'iceconnectionstatechange', event => {
 
 			break;
 	};
+} );
+
+pc.addEventListener( 'connectionstatechange', event => {
+  console.log('Estado de la conexión:', pc.connectionState);
+	switch( pc.connectionState ) {
+		case 'closed':
+			// You can handle the call being disconnected here.
+
+			break;
+	};
+} );
+
+pc.addEventListener( 'icecandidate', event => {
+  console.log('Candidato ICE:', event.candidate);
+
+  
+	// When you find a null candidate then there are no more candidates.  
+	// Gathering of candidates has finished.
+	if ( !event.candidate ) { return; };
+
+  sendSignal({ type: 'candidate', candidate: event.candidate });
+
+
+	// Send the event.candidate onto the person you're calling.
+	// Keeping to Trickle ICE Standards, you should send the candidates immediately.
+} );
+
+pc.addEventListener( 'icecandidateerror', event => {
+  console.log('Error de candidato ICE:', event.errorCode);
+	// You can ignore some candidate errors.
+	// Connections can still be made even when errors occur.
+} );
+
+
+
+pc.addEventListener( 'negotiationneeded', event => {
+  console.log('Negociación necesaria:', event);
+	// You can start the offer stages here.
+	// Be careful as this event can be called multiple times.
+} );
+
+pc.addEventListener( 'signalingstatechange', event => {
+  console.log('Estado de señalización:', pc.signalingState);
+	switch( pc.signalingState ) {
+		case 'closed':
+			// You can handle the call being disconnected here.
+
+			break;
+	};
+} );
+
+pc.addEventListener( 'track', event => {
+  console.log('Evento de pista:', event);
+	// Grab the remote track from the connected participant.
+	remoteMediaStream = remoteMediaStream || new MediaStream();
+	remoteMediaStream.addTrack( event.track, remoteMediaStream );
 } );
 
 
@@ -74,25 +130,35 @@ const createOffer = () => {
 const handleOffer = async (offer) => {
   try {
     console.log('Oferta (offer) recibida:', offer);
-    console.log(offer.type)
+
+    // Verifica que la oferta tenga el formato esperado
+    if (!offer || offer.type !== "offer" || !offer.sdp) {
+      throw new Error("Formato de oferta inválido.");
+    }
+
     // Establecer la descripción remota
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    
+    console.log('Descripción remota establecida con éxito.');
+
     // Crear una respuesta a la oferta
     const answer = await pc.createAnswer();
     
     // Establecer la descripción local
     await pc.setLocalDescription(answer);
-    
-    // Enviar la señal de respuesta
-    sendSignal({ type: "answer", "answer": pc.localDescription });
+    console.log('Descripción local establecida:', pc.localDescription);
 
-    console.log('Oferta (offer) establecida correctamente.');
-    console.log('Respuesta (answer) enviada:', pc.localDescription);
+    // Procesar candidatos (asegúrate de definir este método)
+    processCandidates();
+
+    // Enviar la señal de respuesta
+    sendSignal({ type: "answer", answer: pc.localDescription });
+    console.log('Respuesta enviada correctamente:', pc.localDescription);
+
   } catch (error) {
     console.error('Error al manejar la oferta (offer):', error);
   }
 };
+
 
 
 // Manejar la respuesta recibida
@@ -108,18 +174,35 @@ const handleAnswer = async (answer) => {
 };
 
 // Enviar un candidato ICE al peer
-pc.onicecandidate = (event) => {
-  if (event.candidate) {
-    pc.addIceCandidate(new RTCIceCandidate(event.candidate));
-    sendSignal({ type: 'candidate', candidate: event.candidate });
-    console.log('Candidato ICE enviado:', event.candidate);
-  }
+// pc.onicecandidate = (event) => {
+//   if (event.candidate) {
+//     pc.addIceCandidate(new RTCIceCandidate(event.candidate));
+//     sendSignal({ type: 'candidate', candidate: event.candidate });
+//     console.log('Candidato ICE enviado:', event.candidate);
+//   }
+// };
+
+function handleRemoteCandidate( iceCandidate ) {
+	iceCandidate = new RTCIceCandidate( iceCandidate );
+
+	if ( pc.remoteDescription == null ) {
+		return remoteCandidates.push( iceCandidate );
+	};
+
+	return pc.addIceCandidate( iceCandidate );
+};
+
+
+function processCandidates() {
+	if ( remoteCandidates.length < 1 ) { return; };
+	remoteCandidates.map( candidate => pc.addIceCandidate( candidate ) );
+	remoteCandidates = [];
 };
 
 // Manejar candidato ICE recibido
 const handleCandidate = (candidate) => {
   console.log('Candidato ICE recibido:', candidate);
-  pc.addIceCandidate(new RTCIceCandidate(candidate));
+  pc.addIceCandidate(candidate);
 };
 
 // Función para enviar la señalización
@@ -131,4 +214,4 @@ const sendSignal = (message) => {
 };
 
 // Exportar funciones
-export { createOffer, handleOffer, handleAnswer, handleCandidate, sendText };
+export { createOffer, handleOffer, handleAnswer, handleRemoteCandidate, sendText };

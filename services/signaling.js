@@ -1,4 +1,4 @@
-import { handleAnswer, handleOffer, handleCandidate } from "./wrtc";
+import { handleAnswer, handleOffer, handleRemoteCandidate } from "./wrtc";
 
 let socket;
 
@@ -26,7 +26,7 @@ const connectToSignalingServer = () => {
         handleAnswer(recivedMessageString.answer);
       } else if (recivedMessageString.type === 'candidate') {
         console.log('Recibido candidato:', recivedMessageString.candidate);
-        handleCandidate(recivedMessageString.candidate);
+        handleRemoteCandidate(recivedMessageString.candidate);
       }
     // } catch (error) {
     //   console.log('Error al parsear el mensaje:', error);
