@@ -5,7 +5,7 @@ let remoteCandidates = [];
 
 // Crear PeerConnection
 const socket = connectToSignalingServer();
-
+const candidatesToSend = [];
 const pc = new RTCPeerConnection();
 
 
@@ -35,9 +35,18 @@ pc.addEventListener( 'icecandidate', event => {
   
 	// When you find a null candidate then there are no more candidates.  
 	// Gathering of candidates has finished.
-	if ( !event.candidate ) { return; };
+	if ( !event.candidate ) { 
+    console.log('Candidatos ICE finalizados:', candidatesToSend);
+    candidatesToSend.forEach(candidate => {
+      sendSignal({ type: 'candidate', candidate });
+    });
+    candidatesToSend.length = 0;
+    return;
 
-  sendSignal({ type: 'candidate', candidate: event.candidate });
+  };
+
+  candidatesToSend.push(event.candidate);
+  // sendSignal({ type: 'candidate', candidate: event.candidate });
 
 
 	// Send the event.candidate onto the person you're calling.
