@@ -150,7 +150,7 @@ const handleOffer = async (offer) => {
     // Procesar candidatos (asegúrate de definir este método)
 
     // Enviar la señal de respuesta
-    awasendSignal({ type: "answer", answer: pc.localDescription });
+    sendSignal({ type: "answer", answer: pc.localDescription });
     console.log('Respuesta enviada correctamente:', pc.localDescription);
 
     processCandidates();
