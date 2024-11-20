@@ -48,9 +48,6 @@ pc.addEventListener( 'icecandidate', event => {
 	// Gathering of candidates has finished.
 	if ( !event.candidate ) { return; };
 
-  sendSignal({ type: 'candidate', candidate: event.candidate });
-
-
 	// Send the event.candidate onto the person you're calling.
 	// Keeping to Trickle ICE Standards, you should send the candidates immediately.
 } );
@@ -126,50 +123,86 @@ const sendText = (text) => {
 };
 
 // Crear una oferta sin audio ni video (solo datos)
-const createOffer = () => {
-  const dataChannel = createDataChannel(); // Crear DataChannel
-
-  // Crear una oferta sin audio ni video
-  pc.createOffer()
-    .then((offer) => pc.setLocalDescription(offer))
-    .then(() => {
-      sendSignal({ type: 'offer', offer: pc.localDescription });
-    });
-};
-
-// Manejar la oferta recibida
-const handleOffer = async (offer) => {
+const createOffer = async () => {
   try {
-    console.log('Oferta (offer) recibida:', offer);
+    const dataChannel = createDataChannel(); // Crear DataChannel
 
-    // Verifica que la oferta tenga el formato esperado
-    if (!offer || offer.type !== "offer" || !offer.sdp) {
-      throw new Error("Formato de oferta inválido.");
-    }
+    // Crear promesas para la oferta y los candidatos ICE
+    const offerPromise = createOfferPromise(pc);
+    const iceCandidatesPromise = gatherIceCandidates(pc);
 
-    // Establecer la descripción remota
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    console.log('Descripción remota establecida con éxito.');
+    // Esperar a que ambas promesas se resuelvan
+    const [offer, iceCandidates] = await Promise.all([offerPromise, iceCandidatesPromise]);
 
-    // Crear una respuesta a la oferta
-    const answer = await pc.createAnswer();
-    
-    // Establecer la descripción local
-    await pc.setLocalDescription(answer);
-    console.log('Descripción local establecida:', pc.localDescription);
+    // Enviar la señalización con la oferta y los candidatos ICE
+    sendSignal({
+      type: 'offer',
+      offer,
+      iceCandidates,
+    });
 
-    // Procesar candidatos (asegúrate de definir este método)
-    processCandidates();
-
-    // Enviar la señal de respuesta
-    sendSignal({ type: "answer", answer: pc.localDescription });
-    console.log('Respuesta enviada correctamente:', pc.localDescription);
-
+    console.log('Oferta y candidatos ICE enviados:', { offer, iceCandidates });
   } catch (error) {
-    console.error('Error al manejar la oferta (offer):', error);
+    console.error('Error al crear y enviar la oferta:', error);
   }
 };
 
+
+// Manejar la oferta recibida
+const handleOffer = async (message) => {
+  try {
+    const { offer, iceCandidates } = message;
+
+    // Establecer descripción remota
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    console.log('Descripción remota establecida con éxito.');
+
+    // Agregar los candidatos ICE remotos
+    for (const candidate of iceCandidates) {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+    console.log('Candidatos ICE agregados correctamente.');
+
+    // Crear y establecer la respuesta
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // Enviar la respuesta al peer
+    sendSignal({ type: 'answer', answer: pc.localDescription });
+    console.log('Respuesta enviada correctamente:', pc.localDescription);
+
+  } catch (error) {
+    console.error('Error al manejar la oferta:', error);
+  }
+};
+
+
+
+function gatherIceCandidates(peerConnection) {
+  return new Promise((resolve) => {
+    const candidates = [];
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        candidates.push(event.candidate);
+      } else {
+        // Null candidate: no hay más candidatos
+        resolve(candidates);
+      }
+    };
+  });
+}
+
+function createOfferPromise(peerConnection) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      resolve(peerConnection.localDescription);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 
 // Manejar la respuesta recibida
