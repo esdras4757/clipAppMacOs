@@ -183,7 +183,6 @@ const handleAnswer = async (answer) => {
 // };
 
 function handleRemoteCandidate( iceCandidate ) {
-	iceCandidate = new RTCIceCandidate( iceCandidate );
 
 	if ( pc.remoteDescription == null ) {
 		return remoteCandidates.push( iceCandidate );
