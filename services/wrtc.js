@@ -5,8 +5,19 @@ let remoteCandidates = [];
 
 // Crear PeerConnection
 const socket = connectToSignalingServer();
-const candidatesToSend = [];
-const pc = new RTCPeerConnection();
+
+const pc = new RTCPeerConnection({
+  iceServers: [
+      {
+          urls: "stun:stun.l.google.com:19302",
+      },
+      {
+        urls: 'turn:relay1.expressturn.com:3478',
+        username: 'ef0SAWSM9ABXU7KEYW',
+        credential: 'y48ACpe0qLA0blxa'
+     }
+     ]
+  });
 
 
 pc.addEventListener( 'iceconnectionstatechange', event => {
@@ -35,18 +46,9 @@ pc.addEventListener( 'icecandidate', event => {
   
 	// When you find a null candidate then there are no more candidates.  
 	// Gathering of candidates has finished.
-	if ( !event.candidate ) { 
-    console.log('Candidatos ICE finalizados:', candidatesToSend);
-    candidatesToSend.forEach(candidate => {
-      sendSignal({ type: 'candidate', candidate });
-    });
-    candidatesToSend.length = 0;
-    return;
+	if ( !event.candidate ) { return; };
 
-  };
-
-  candidatesToSend.push(event.candidate);
-  // sendSignal({ type: 'candidate', candidate: event.candidate });
+  sendSignal({ type: 'candidate', candidate: event.candidate });
 
 
 	// Send the event.candidate onto the person you're calling.
@@ -157,12 +159,11 @@ const handleOffer = async (offer) => {
     console.log('Descripción local establecida:', pc.localDescription);
 
     // Procesar candidatos (asegúrate de definir este método)
+    processCandidates();
 
     // Enviar la señal de respuesta
     sendSignal({ type: "answer", answer: pc.localDescription });
     console.log('Respuesta enviada correctamente:', pc.localDescription);
-
-    processCandidates();
 
   } catch (error) {
     console.error('Error al manejar la oferta (offer):', error);
