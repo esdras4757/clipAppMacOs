@@ -6,7 +6,18 @@ let remoteCandidates = [];
 // Crear PeerConnection
 const socket = connectToSignalingServer();
 
-const pc = new RTCPeerConnection();
+const pc = new RTCPeerConnection({
+  iceServers: [
+      {
+          urls: "stun:stun.l.google.com:19302",
+      },
+      {
+          urls: 'relay1.expressturn.com:3478',
+          credential: 'y48ACpe0qLA0blxa',
+          username: 'ef0SAWSM9ABXU7KEYW'
+      },
+     ]
+  });
 
 
 pc.addEventListener( 'iceconnectionstatechange', event => {
