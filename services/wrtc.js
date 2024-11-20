@@ -6,18 +6,7 @@ let remoteCandidates = [];
 // Crear PeerConnection
 const socket = connectToSignalingServer();
 
-const pc = new RTCPeerConnection({
-  iceServers: [
-      {
-          urls: "stun:stun.l.google.com:19302",
-      },
-      {
-        urls: 'turn:relay1.expressturn.com:3478',
-        username: 'ef0SAWSM9ABXU7KEYW',
-        credential: 'y48ACpe0qLA0blxa'
-     }
-     ]
-  });
+const pc = new RTCPeerConnection();
 
 
 pc.addEventListener( 'iceconnectionstatechange', event => {
@@ -159,11 +148,12 @@ const handleOffer = async (offer) => {
     console.log('Descripción local establecida:', pc.localDescription);
 
     // Procesar candidatos (asegúrate de definir este método)
-    processCandidates();
 
     // Enviar la señal de respuesta
-    sendSignal({ type: "answer", answer: pc.localDescription });
+    awasendSignal({ type: "answer", answer: pc.localDescription });
     console.log('Respuesta enviada correctamente:', pc.localDescription);
+
+    processCandidates();
 
   } catch (error) {
     console.error('Error al manejar la oferta (offer):', error);
