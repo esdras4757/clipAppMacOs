@@ -55,7 +55,7 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     if (clipboardContent.content !== '') {
-      if (clipboardContent.type === 'text') {
+      if (clipboardContent.type === 'text ') {
         sendText(clipboardContent.content);
       }
     }
