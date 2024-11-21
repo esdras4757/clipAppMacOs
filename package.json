@@ -1,5 +1,5 @@
 {
-  "name": "clipApp",
+  "name": "clipmacos",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -16,6 +16,7 @@
     "react": "18.3.1",
     "react-native": "0.76.1",
     "react-native-device-info": "^14.0.0",
+    "react-native-macos": "0.76.2",
     "react-native-webrtc": "^124.0.4",
     "react-native-zeroconf": "^0.13.8",
     "ws": "^8.18.0"
