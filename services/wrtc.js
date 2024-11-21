@@ -111,6 +111,7 @@ const createDataChannel = () => {
 
     dataChannel.onmessage = (event) => {
       console.log("Mensaje recibido en DataChannel:", event.data);
+      handleMessage(event.data);
     };
   }
   return dataChannel;
