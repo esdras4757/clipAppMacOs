@@ -1,5 +1,6 @@
 import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, RTCDataChannel } from 'react-native-webrtc';
 import { connectToSignalingServer } from './signaling';
+import { handleMessage } from './handleMessage';
 let dataChannel = null;
 let remoteCandidates = [];
 
@@ -8,17 +9,29 @@ const socket = connectToSignalingServer();
 
 const pc = new RTCPeerConnection({
   iceServers: [
+    {
+      urls: "stun:stun.relay.metered.ca:80",
+    },
       {
-          urls: "stun:stun.l.google.com:19302",
-      },
-      {
-        urls: 'turn:relay1.expressturn.com:3478',
-        username: 'ef0SAWSM9ABXU7KEYW',
-        credential: 'y48ACpe0qLA0blxa'
+        urls: 'turn:global.relay.metered.ca:443',
+        username: 'e61a2043de714c760278910e',
+        credential: 'YB3D0kGKDPWfYjPV'
      }
      ]
   });
 
+pc.ondatachannel = (event) => {
+    console.log("DataChannel recibido desde el peer:", event.channel);
+    dataChannel = event.channel;
+  
+    dataChannel.onopen = () => {
+      console.log("DataChannel abierto y listo para enviar mensajes.");
+    };
+  
+    dataChannel.onmessage = (event) => {
+       handleMessage(event.data);      
+    };
+  };
 
 pc.addEventListener( 'iceconnectionstatechange', event => {
   console.log('Estado de la conexión:', pc.connectionState);
@@ -67,8 +80,6 @@ pc.addEventListener( 'icecandidateerror', event => {
 	// Connections can still be made even when errors occur.
 } );
 
-
-
 pc.addEventListener( 'negotiationneeded', event => {
   console.log('Negociación necesaria:', event);
 	// You can start the offer stages here.
@@ -84,16 +95,6 @@ pc.addEventListener( 'signalingstatechange', event => {
 			break;
 	};
 } );
-
-pc.addEventListener( 'track', event => {
-  console.log('Evento de pista:', event);
-	// Grab the remote track from the connected participant.
-	remoteMediaStream = remoteMediaStream || new MediaStream();
-	remoteMediaStream.addTrack( event.track, remoteMediaStream );
-} );
-
-
-
 
 const createDataChannel = () => {
   if (!dataChannel) {
@@ -175,8 +176,6 @@ const handleOffer = async (offer) => {
     console.error('Error al manejar la oferta (offer):', error);
   }
 };
-
-
 
 // Manejar la respuesta recibida
 const handleAnswer = async (answer) => {
